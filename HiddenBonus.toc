@@ -1,0 +1,9 @@
+## Interface: 120100
+## Title: Hidden Bonus
+## Notes: Hides the bonus roll prompt for the current raid bosses, Mythic+ dungeons, and Delves you choose to skip.
+## Author: Karnytine-Stormrage (joe@tyreenet.com)
+## Version: 1.0.0
+## SavedVariables: HiddenBonusDB
+
+HiddenBonus.lua
+HiddenBonus.UI.lua
