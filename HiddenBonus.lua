@@ -1,17 +1,18 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.0.0
+-- v1.1.0
 --
--- Hides the bonus roll prompt for the current raid bosses, Mythic+ dungeons,
--- and Delves you choose to skip. Boss and dungeon lists are read from the
--- Encounter Journal and the current Mythic+ season pool at runtime, so a new
--- tier or season needs no addon update.
+-- Hides the bonus roll prompt for everything by default. Check a raid boss,
+-- Mythic+ dungeon, or Delves to keep seeing the prompt for that content;
+-- everything left unchecked stays hidden. Boss and dungeon lists are read
+-- from the Encounter Journal and the current Mythic+ season pool at runtime,
+-- so a new tier or season needs no addon update.
 --
 -- Commands:
 --   /hb, /hiddenbonus  toggle the options window
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.0.0"
+local ADDON_VERSION = "1.1.0"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}
@@ -30,9 +31,9 @@ local function GetDB()
         d = {}
         HiddenBonusDB = d
     end
-    if type(d.hiddenBosses) ~= "table" then d.hiddenBosses = {} end
-    if type(d.hiddenDungeons) ~= "table" then d.hiddenDungeons = {} end
-    if d.hideDelves == nil then d.hideDelves = false end
+    if type(d.shownBosses) ~= "table" then d.shownBosses = {} end
+    if type(d.shownDungeons) ~= "table" then d.shownDungeons = {} end
+    if d.showDelves == nil then d.showDelves = false end
     return d
 end
 ns.GetDB = GetDB
@@ -176,21 +177,26 @@ ns.GetDungeonEncounters = GetDungeonEncounters
 
 --------------------------------------------------------------------------------
 -- Filtering
+--
+-- Default-hide: any content this addon recognizes (current-tier raid bosses,
+-- current-season Mythic+ dungeons, Delves) is hidden unless explicitly
+-- checked to stay visible. Content the addon doesn't recognize is left
+-- alone, since there is no control for it to obey.
 --------------------------------------------------------------------------------
 
 local function ShouldHide(info)
     local db = GetDB()
 
     if info.difficultyID == DIFF_DELVE then
-        return db.hideDelves == true
+        return db.showDelves ~= true
     end
 
     if info.difficultyID == DIFF_MYTHIC_PLUS then
         if info.encounterID and info.encounterID ~= 0 then
             local dungeons = GetDungeonEncounters()
             local mapID = dungeons.encounterToDungeon[info.encounterID]
-            if mapID and db.hiddenDungeons[mapID] then
-                return true
+            if mapID then
+                return db.shownDungeons[mapID] ~= true
             end
         end
         return false
@@ -198,8 +204,8 @@ local function ShouldHide(info)
 
     if info.encounterID and info.encounterID ~= 0 then
         local raid = GetRaidEncounters()
-        if raid.byID[info.encounterID] and db.hiddenBosses[info.encounterID] then
-            return true
+        if raid.byID[info.encounterID] then
+            return db.shownBosses[info.encounterID] ~= true
         end
     end
 
