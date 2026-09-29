@@ -4,6 +4,17 @@ All notable changes to **Hidden Bonus** are documented in this file.
 
 ---
 
+## [1.1.1] - 2026-09-23
+
+### Fixed
+
+- Raid bosses column was always empty. Current Season raids in the Encounter Journal were mistaken for the world-boss entry and skipped; the world-boss entry is now identified by its expansion name instead.
+- An empty raid list is no longer cached for the whole session.
+
+### Added
+
+- `/hb debug` prints the raid instances the Encounter Journal reports.
+
 ## [1.1.0] - 2026-09-22
 
 ### Changed

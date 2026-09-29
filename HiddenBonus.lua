@@ -1,6 +1,6 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.1.0
+-- v1.1.1
 --
 -- Hides the bonus roll prompt for everything by default. Check a raid boss,
 -- Mythic+ dungeon, or Delves to keep seeing the prompt for that content;
@@ -12,7 +12,7 @@
 --   /hb, /hiddenbonus  toggle the options window
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.1.0"
+local ADDON_VERSION = "1.1.1"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}
@@ -50,37 +50,53 @@ local function BuildRaidEncounters()
         return { list = list, byID = byID }
     end
 
-    local tier = EJ_GetNumTiers() or 0
-    if tier < 1 then
+    local numTiers = EJ_GetNumTiers() or 0
+    if numTiers < 1 then
         return { list = list, byID = byID }
     end
 
     local savedTier = EJ_GetCurrentTier and EJ_GetCurrentTier() or nil
     local savedInstance = EJ_GetCurrentInstance and EJ_GetCurrentInstance() or nil
 
-    if pcall(EJ_SelectTier, tier) then
-        local i = 1
-        while true do
-            local instanceID, instanceName, _, _, _, _, _, dungeonAreaMapID = EJ_GetInstanceByIndex(i, true)
-            if not instanceID then break end
-
-            -- dungeonAreaMapID == 0 marks the world-boss pseudo-instance; skip it,
-            -- this addon only lists real raid encounters here.
-            if dungeonAreaMapID ~= 0 then
-                pcall(EJ_SelectInstance, instanceID)
-                local j = 1
-                while true do
-                    local encounterName, _, encounterID = EJ_GetEncounterInfoByIndex(j, instanceID)
-                    if not encounterID then break end
-                    if encounterName and not byID[encounterID] then
-                        byID[encounterID] = true
-                        list[#list + 1] = { id = encounterID, name = encounterName, instance = instanceName }
-                    end
-                    j = j + 1
-                end
-            end
-            i = i + 1
+    -- The world-boss pseudo-instance is named after its expansion ("Midnight"),
+    -- which is also that expansion's tier name. dungeonAreaMapID can't be used
+    -- for this: entries under the "Current Season" tier report 0 for real raids.
+    local tierNames = {}
+    if EJ_GetTierInfo then
+        for t = 1, numTiers do
+            local tierName = EJ_GetTierInfo(t)
+            if tierName then tierNames[tierName] = true end
         end
+    end
+
+    -- The newest tier is normally "Current Season". As a safety net, walk back
+    -- from it and use the first tier that yields real raid encounters.
+    for tier = numTiers, math.max(1, numTiers - 2), -1 do
+        if pcall(EJ_SelectTier, tier) then
+            local i = 1
+            while true do
+                local instanceID, instanceName = EJ_GetInstanceByIndex(i, true)
+                if not instanceID then break end
+
+                -- Skip the world-boss pseudo-instance; this addon only lists
+                -- real raid encounters here.
+                if not (instanceName and tierNames[instanceName]) then
+                    pcall(EJ_SelectInstance, instanceID)
+                    local j = 1
+                    while true do
+                        local encounterName, _, encounterID = EJ_GetEncounterInfoByIndex(j, instanceID)
+                        if not encounterID then break end
+                        if encounterName and not byID[encounterID] then
+                            byID[encounterID] = true
+                            list[#list + 1] = { id = encounterID, name = encounterName, instance = instanceName }
+                        end
+                        j = j + 1
+                    end
+                end
+                i = i + 1
+            end
+        end
+        if #list > 0 then break end
     end
 
     if savedTier and savedTier > 0 then pcall(EJ_SelectTier, savedTier) end
@@ -91,7 +107,12 @@ end
 
 local function GetRaidEncounters()
     if not raidCache then
-        raidCache = BuildRaidEncounters()
+        local result = BuildRaidEncounters()
+        -- Don't cache an empty result; the EJ may not be ready yet.
+        if #result.list == 0 then
+            return result
+        end
+        raidCache = result
     end
     return raidCache
 end
@@ -237,7 +258,31 @@ HookBonusRollFrame()
 
 SLASH_HIDDENBONUS1 = "/hiddenbonus"
 SLASH_HIDDENBONUS2 = "/hb"
-SlashCmdList["HIDDENBONUS"] = function()
+local function DebugDumpRaids()
+    local numTiers = EJ_GetNumTiers and EJ_GetNumTiers() or 0
+    print(("|cff66a0ffHidden Bonus|r EJ tiers: %d"):format(numTiers))
+    local savedTier = EJ_GetCurrentTier and EJ_GetCurrentTier() or nil
+    for tier = numTiers, math.max(1, numTiers - 2), -1 do
+        if pcall(EJ_SelectTier, tier) then
+            print(("  tier %d: %s"):format(tier, tostring(EJ_GetTierInfo and EJ_GetTierInfo(tier))))
+            local i = 1
+            while true do
+                local instanceID, instanceName, _, _, _, _, _, dungeonAreaMapID = EJ_GetInstanceByIndex(i, true)
+                if not instanceID then break end
+                print(("    raid %d %s areaMap=%s"):format(instanceID, tostring(instanceName), tostring(dungeonAreaMapID)))
+                i = i + 1
+            end
+        end
+    end
+    if savedTier and savedTier > 0 then pcall(EJ_SelectTier, savedTier) end
+    print(("  bosses found: %d"):format(#GetRaidEncounters().list))
+end
+
+SlashCmdList["HIDDENBONUS"] = function(msg)
+    if msg and msg:lower():match("^%s*debug") then
+        DebugDumpRaids()
+        return
+    end
     if ns.ToggleOptions then
         ns.ToggleOptions()
     end

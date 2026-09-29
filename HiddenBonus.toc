@@ -2,7 +2,7 @@
 ## Title: Hidden Bonus
 ## Notes: Hides the bonus roll prompt for everything by default; check what you want to keep seeing it for.
 ## Author: Karnytine-Stormrage (joe@tyreenet.com)
-## Version: 1.1.0
+## Version: 1.1.1
 ## SavedVariables: HiddenBonusDB
 
 HiddenBonus.lua
