@@ -4,6 +4,17 @@ All notable changes to **Hidden Bonus** are documented in this file.
 
 ---
 
+## [1.1.2] - 2026-09-29
+
+### Changed
+
+- With nothing checked, every bonus roll prompt is now shown. Checking raid bosses, Mythic+ dungeons, or Delves shows the prompt only for the checked content and hides every other bonus roll, including content that isn’t listed (world bosses, older raids).
+- Checks saved for bosses or dungeons that are no longer in the current lists are ignored, so an old tier’s selection can’t hide everything.
+
+### Fixed
+
+- An empty Mythic+ dungeon list is no longer cached for the whole session.
+
 ## [1.1.1] - 2026-09-23
 
 ### Fixed

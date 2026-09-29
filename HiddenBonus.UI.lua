@@ -143,7 +143,7 @@ local function BuildFrame()
     sub:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -16, -46)
     sub:SetJustifyH("LEFT")
     sub:SetTextColor(unpack(TEXT_MUTED))
-    sub:SetText("Everything below is hidden by default. Check anything you still want a bonus roll prompt for.")
+    sub:SetText("Nothing checked shows every bonus roll. Check items to show bonus rolls only for those.")
 
     local db = ns.GetDB()
 
@@ -186,7 +186,7 @@ local function BuildFrame()
     -- Delves
     local delveX = dungeonX + COLUMN_WIDTH + 12
     MakeColumnHeader(frame, delveX, "DELVES")
-    delveCheck = MakeCheck(frame, delveX, COL_TOP_Y - 20, "Keep showing bonus rolls from Delves", function(checked)
+    delveCheck = MakeCheck(frame, delveX, COL_TOP_Y - 20, "Show bonus rolls from Delves", function(checked)
         ns.GetDB().showDelves = checked
     end)
 

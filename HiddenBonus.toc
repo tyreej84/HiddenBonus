@@ -1,8 +1,8 @@
 ## Interface: 120100
 ## Title: Hidden Bonus
-## Notes: Hides the bonus roll prompt for everything by default; check what you want to keep seeing it for.
+## Notes: Shows every bonus roll prompt until you check content; then only checked content keeps its prompt.
 ## Author: Karnytine-Stormrage (joe@tyreenet.com)
-## Version: 1.1.1
+## Version: 1.1.2
 ## SavedVariables: HiddenBonusDB
 
 HiddenBonus.lua

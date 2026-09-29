@@ -1,10 +1,10 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.1.1
+-- v1.1.2
 --
--- Hides the bonus roll prompt for everything by default. Check a raid boss,
--- Mythic+ dungeon, or Delves to keep seeing the prompt for that content;
--- everything left unchecked stays hidden. Boss and dungeon lists are read
+-- With nothing checked, every bonus roll prompt is shown. Check raid bosses,
+-- Mythic+ dungeons, or Delves to show the prompt only for that content and
+-- hide every other bonus roll. Boss and dungeon lists are read
 -- from the Encounter Journal and the current Mythic+ season pool at runtime,
 -- so a new tier or season needs no addon update.
 --
@@ -12,7 +12,7 @@
 --   /hb, /hiddenbonus  toggle the options window
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.1.1"
+local ADDON_VERSION = "1.1.2"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}
@@ -190,7 +190,12 @@ end
 
 local function GetDungeonEncounters()
     if not dungeonCache then
-        dungeonCache = BuildDungeonEncounters()
+        local result = BuildDungeonEncounters()
+        -- Don't cache an empty result; the season data may not be ready yet.
+        if #result.list == 0 then
+            return result
+        end
+        dungeonCache = result
     end
     return dungeonCache
 end
@@ -199,39 +204,59 @@ ns.GetDungeonEncounters = GetDungeonEncounters
 --------------------------------------------------------------------------------
 -- Filtering
 --
--- Default-hide: any content this addon recognizes (current-tier raid bosses,
--- current-season Mythic+ dungeons, Delves) is hidden unless explicitly
--- checked to stay visible. Content the addon doesn't recognize is left
--- alone, since there is no control for it to obey.
+-- Nothing checked: every bonus roll prompt is shown. Anything checked: only
+-- the checked content keeps its prompt, and every other bonus roll is hidden.
+-- Only checks for content in the current lists count, so a boss saved from a
+-- past tier (no longer visible in the window) can't silently hide everything.
 --------------------------------------------------------------------------------
 
-local function ShouldHide(info)
-    local db = GetDB()
-
-    if info.difficultyID == DIFF_DELVE then
-        return db.showDelves ~= true
+local function HasActiveSelection(db)
+    if db.showDelves == true then
+        return true
     end
 
-    if info.difficultyID == DIFF_MYTHIC_PLUS then
-        if info.encounterID and info.encounterID ~= 0 then
-            local dungeons = GetDungeonEncounters()
-            local mapID = dungeons.encounterToDungeon[info.encounterID]
-            if mapID then
-                return db.shownDungeons[mapID] ~= true
-            end
+    local raid = GetRaidEncounters()
+    for encounterID, shown in pairs(db.shownBosses) do
+        if shown == true and raid.byID[encounterID] then
+            return true
         end
-        return false
     end
 
-    if info.encounterID and info.encounterID ~= 0 then
-        local raid = GetRaidEncounters()
-        if raid.byID[info.encounterID] then
-            return db.shownBosses[info.encounterID] ~= true
+    local dungeons = GetDungeonEncounters()
+    for _, entry in ipairs(dungeons.list) do
+        if db.shownDungeons[entry.mapID] == true then
+            return true
         end
     end
 
     return false
 end
+
+local function IsSelected(info, db)
+    if info.difficultyID == DIFF_DELVE then
+        return db.showDelves == true
+    end
+
+    if not info.encounterID or info.encounterID == 0 then
+        return false
+    end
+
+    if info.difficultyID == DIFF_MYTHIC_PLUS then
+        local mapID = GetDungeonEncounters().encounterToDungeon[info.encounterID]
+        return mapID ~= nil and db.shownDungeons[mapID] == true
+    end
+
+    return db.shownBosses[info.encounterID] == true
+end
+
+local function ShouldHide(info)
+    local db = GetDB()
+    if not HasActiveSelection(db) then
+        return false
+    end
+    return not IsSelected(info, db)
+end
+ns.ShouldHide = ShouldHide
 
 local function HiddenBonus_OnBonusRollShow(frame)
     local info = {
