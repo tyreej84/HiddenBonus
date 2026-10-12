@@ -1,6 +1,6 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.1.2
+-- v1.1.3
 --
 -- With nothing checked, every bonus roll prompt is shown. Check raid bosses,
 -- Mythic+ dungeons, or Delves to show the prompt only for that content and
@@ -12,7 +12,7 @@
 --   /hb, /hiddenbonus  toggle the options window
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.1.2"
+local ADDON_VERSION = "1.1.3"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}

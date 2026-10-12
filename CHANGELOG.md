@@ -4,6 +4,12 @@ All notable changes to **Hidden Bonus** are documented in this file.
 
 ---
 
+## [1.1.3] - 2026-10-12
+
+### Changed
+
+- Updated for Retail 12.1.5 (`## Interface: 120105`). The bonus roll prompt data used for filtering is unchanged in 12.1.5, so filtering works as before.
+
 ## [1.1.2] - 2026-09-29
 
 ### Changed

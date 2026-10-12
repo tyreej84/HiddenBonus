@@ -1,8 +1,8 @@
-## Interface: 120100
+## Interface: 120105
 ## Title: Hidden Bonus
 ## Notes: Shows every bonus roll prompt until you check content; then only checked content keeps its prompt.
 ## Author: Karnytine-Stormrage (joe@tyreenet.com)
-## Version: 1.1.2
+## Version: 1.1.3
 ## SavedVariables: HiddenBonusDB
 
 HiddenBonus.lua
