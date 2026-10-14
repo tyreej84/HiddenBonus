@@ -4,6 +4,13 @@ All notable changes to **Hidden Bonus** are documented in this file.
 
 ---
 
+## [1.1.4] - 2026-10-14
+
+### Added
+
+- `/hb show` brings back a bonus roll prompt that was hidden, as long as the roll is still open. It works whether Hidden Bonus or something else hid the prompt.
+- Hidden Bonus now prints a chat line each time it hides a bonus roll, naming the boss or dungeon, so a hidden roll is never silent.
+
 ## [1.1.3] - 2026-10-12
 
 ### Changed

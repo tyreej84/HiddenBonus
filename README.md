@@ -14,6 +14,8 @@ Type **`/hb`** or **`/hiddenbonus`** to open the options window, which has three
 - **Mythic+ Dungeons** — every dungeon in the current Mythic+ season pool.
 - **Delves** — a single switch to show bonus rolls from Bountiful Delves.
 
+Each time Hidden Bonus hides a bonus roll, it says so in chat. Type **`/hb show`** to bring the prompt back while the roll is still open.
+
 Because the raid and dungeon lists are built from live game data (Encounter Journal + `C_ChallengeMode.GetMapTable()`), a new raid tier or Mythic+ season needs no addon update — the lists update themselves the next time you open the window.
 
 ---

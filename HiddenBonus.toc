@@ -2,7 +2,7 @@
 ## Title: Hidden Bonus
 ## Notes: Shows every bonus roll prompt until you check content; then only checked content keeps its prompt.
 ## Author: Karnytine-Stormrage (joe@tyreenet.com)
-## Version: 1.1.3
+## Version: 1.1.4
 ## SavedVariables: HiddenBonusDB
 
 HiddenBonus.lua

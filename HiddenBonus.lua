@@ -1,6 +1,6 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.1.3
+-- v1.1.4
 --
 -- With nothing checked, every bonus roll prompt is shown. Check raid bosses,
 -- Mythic+ dungeons, or Delves to show the prompt only for that content and
@@ -10,9 +10,10 @@
 --
 -- Commands:
 --   /hb, /hiddenbonus  toggle the options window
+--   /hb show           show a bonus roll prompt that was hidden
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.1.3"
+local ADDON_VERSION = "1.1.4"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}
@@ -258,7 +259,32 @@ local function ShouldHide(info)
 end
 ns.ShouldHide = ShouldHide
 
+local CHAT_PREFIX = "|cff66a0ffHidden Bonus|r"
+
+-- spellID of a prompt the player asked to see with /hb show; the filter
+-- leaves it alone so it isn't removed again by the OnShow hook.
+local forcedSpellID
+
+local function DescribeRoll(frame)
+    local name
+    if frame.encounterID and frame.encounterID ~= 0 and EJ_GetEncounterInfo then
+        name = EJ_GetEncounterInfo(frame.encounterID)
+    end
+    if not name and frame.instanceID and frame.instanceID ~= 0 and EJ_GetInstanceInfo then
+        name = EJ_GetInstanceInfo(frame.instanceID)
+    end
+    if not name and frame.difficultyID == DIFF_DELVE then
+        name = "Delve"
+    end
+    return name or "unlisted content"
+end
+
 local function HiddenBonus_OnBonusRollShow(frame)
+    if forcedSpellID and frame.spellID == forcedSpellID then
+        return
+    end
+    forcedSpellID = nil
+
     local info = {
         difficultyID = frame.difficultyID,
         encounterID = frame.encounterID,
@@ -266,8 +292,62 @@ local function HiddenBonus_OnBonusRollShow(frame)
 
     if ShouldHide(info) then
         GroupLootContainer_RemoveFrame(GroupLootContainer, frame)
+        print(("%s hid the bonus roll for %s. Type |cffffd100/hb show|r to bring it back."):format(CHAT_PREFIX, DescribeRoll(frame)))
     end
 end
+
+-- Finds the bonus roll prompt the server still has open, if any. This is the
+-- same data Blizzard uses to restore the prompt after a /reload.
+local function GetActiveBonusRollPrompt()
+    if not (GetSpellConfirmationPromptsInfo and Enum and Enum.ConfirmationPromptUIType) then
+        return nil
+    end
+    local bonusRollType = Enum.ConfirmationPromptUIType.BonusRoll
+    for _, prompt in ipairs(GetSpellConfirmationPromptsInfo() or {}) do
+        if prompt.spellID and prompt.confirmType == bonusRollType then
+            return prompt
+        end
+    end
+    return nil
+end
+
+-- Shows a bonus roll prompt that was hidden, by Hidden Bonus or anything else,
+-- while the roll is still open.
+local function ShowHiddenBonusRoll()
+    local frame = BonusRollFrame
+    if not (frame and GroupLootContainer and GroupLootContainer_AddFrame) then
+        print(CHAT_PREFIX .. " The bonus roll frame isn't available.")
+        return
+    end
+    if frame:IsShown() then
+        print(CHAT_PREFIX .. " The bonus roll prompt is already showing.")
+        return
+    end
+
+    local prompt = GetActiveBonusRollPrompt()
+    local frameIsLive = frame.state == "prompt" and frame.spellID ~= nil
+        and (frame.endTime or 0) > time()
+
+    if frameIsLive and (not prompt or prompt.spellID == frame.spellID) then
+        -- The frame still holds this roll; put it back without rebuilding it.
+        forcedSpellID = frame.spellID
+        GroupLootContainer_AddFrame(GroupLootContainer, frame)
+    elseif prompt and BonusRollFrame_StartBonusRoll then
+        forcedSpellID = prompt.spellID
+        BonusRollFrame_StartBonusRoll(prompt.spellID, prompt.text, prompt.duration, prompt.currencyID,
+            prompt.currencyCost, prompt.difficultyID, prompt.displayItemID, prompt.itemContext,
+            prompt.treasureContextLevel)
+    else
+        print(CHAT_PREFIX .. " No bonus roll is open right now.")
+        return
+    end
+
+    if not frame:IsShown() then
+        -- StartBonusRoll returns early when you have no bonus roll currency.
+        print(CHAT_PREFIX .. " A bonus roll is open, but the game didn't show it (check your bonus roll currency).")
+    end
+end
+ns.ShowHiddenBonusRoll = ShowHiddenBonusRoll
 
 local function HookBonusRollFrame()
     if not BonusRollFrame then
@@ -304,6 +384,10 @@ local function DebugDumpRaids()
 end
 
 SlashCmdList["HIDDENBONUS"] = function(msg)
+    if msg and msg:lower():match("^%s*show") then
+        ShowHiddenBonusRoll()
+        return
+    end
     if msg and msg:lower():match("^%s*debug") then
         DebugDumpRaids()
         return
