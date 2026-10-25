@@ -1,6 +1,6 @@
 -- HiddenBonus.lua
 -- Hidden Bonus
--- v1.1.4
+-- v1.1.5
 --
 -- With nothing checked, every bonus roll prompt is shown. Check raid bosses,
 -- Mythic+ dungeons, or Delves to show the prompt only for that content and
@@ -13,7 +13,7 @@
 --   /hb show           show a bonus roll prompt that was hidden
 
 local ADDON, ns = ...
-local ADDON_VERSION = "1.1.4"
+local ADDON_VERSION = "1.1.5"
 
 -- DifficultyUtil.ID is Blizzard's table; the literals are a fallback.
 local D = DifficultyUtil and DifficultyUtil.ID or {}
@@ -265,6 +265,20 @@ local CHAT_PREFIX = "|cff66a0ffHidden Bonus|r"
 -- leaves it alone so it isn't removed again by the OnShow hook.
 local forcedSpellID
 
+-- Blizzard re-shows an open prompt (loading screens, loot container
+-- refreshes), so the notice is printed once per roll, not once per OnShow.
+local announcedSpellID, announcedUntil
+
+local function ShouldAnnounce(frame)
+    local now = GetTime()
+    if frame.spellID == announcedSpellID and announcedUntil and now < announcedUntil then
+        return false
+    end
+    announcedSpellID = frame.spellID
+    announcedUntil = (frame.endTime and frame.endTime > now) and frame.endTime or now + 180
+    return true
+end
+
 local function DescribeRoll(frame)
     local name
     if frame.encounterID and frame.encounterID ~= 0 and EJ_GetEncounterInfo then
@@ -292,7 +306,9 @@ local function HiddenBonus_OnBonusRollShow(frame)
 
     if ShouldHide(info) then
         GroupLootContainer_RemoveFrame(GroupLootContainer, frame)
-        print(("%s hid the bonus roll for %s. Type |cffffd100/hb show|r to bring it back."):format(CHAT_PREFIX, DescribeRoll(frame)))
+        if ShouldAnnounce(frame) then
+            print(("%s hid the bonus roll for %s. Type |cffffd100/hb show|r to bring it back."):format(CHAT_PREFIX, DescribeRoll(frame)))
+        end
     end
 end
 

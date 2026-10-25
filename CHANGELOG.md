@@ -4,6 +4,12 @@ All notable changes to **Hidden Bonus** are documented in this file.
 
 ---
 
+## [1.1.5] - 2026-10-25
+
+### Fixed
+
+- The "hid the bonus roll" chat notice no longer repeats for the same roll. The game can show a bonus roll prompt several times while the roll is open (for example after a loading screen). Hidden Bonus still hides the prompt each time, but now prints the notice only once per roll.
+
 ## [1.1.4] - 2026-10-14
 
 ### Added
